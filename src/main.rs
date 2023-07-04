@@ -9,7 +9,7 @@ use std::{
 use calamine::{open_workbook, DataType, Reader, Xlsx};
 use clap::Parser;
 use color_eyre::{
-    eyre::{bail, eyre, ContextCompat},
+    eyre::{bail, eyre, Context, ContextCompat},
     Result,
 };
 use indicatif::ProgressBar;
@@ -110,12 +110,20 @@ async fn main() -> Result<()> {
 
     for (i, result) in reader.lines().enumerate() {
         let line = result?;
+        let line = line.trim();
+
+        if line.is_empty() {
+            continue;
+        }
 
         let (key, value) = line
-            .split_once('–')
+            .split_once(['–', '-'])
             .wrap_err_with(|| eyre!("Invalid entry at line #{}", i + 1))?;
 
-        dictionary.insert(key.trim().to_lowercase(), value.trim().to_string());
+        dictionary.insert(
+            key.trim_end().to_lowercase(),
+            value.trim_start().to_string(),
+        );
     }
 
     let mut workbook: Xlsx<_> = open_workbook(args.source_path)?;
@@ -199,7 +207,11 @@ async fn main() -> Result<()> {
         let tx = tx.clone();
 
         futures.push(async move {
-            let result = translate(prompt, &client).await.map(|v| (key, v));
+            let result = translate(prompt, &client)
+                .await
+                .map(|v| (key, v))
+                .wrap_err_with(|| format!("{:?}", (row, column)));
+
             tx.send(result).await
         });
     }
