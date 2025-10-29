@@ -1,5 +1,7 @@
 # XLSX translator
 
+A Rust-powered Excel translation tool leveraging the OpenAI API for automated multi-language support.
+
 ```
 Usage: xlsx-translator --api-key <API_KEY> <DICTIONARY_PATH> <SOURCE_PATH> <DESTINATION_PATH>
 
